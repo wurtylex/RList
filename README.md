@@ -1,37 +1,37 @@
-# rlist
+# RList
 
 A fast, featureful command-line reading list for academic papers.
 
-Add a paper by arXiv id, DOI, or URL and rlist fetches its metadata (title,
-authors, year, venue, abstract, PDF link) automatically. Track what you plan
-to read, are reading, and have read; tag, prioritize, rate, and annotate
-papers; search everything full-text; and export to BibTeX when it's time to
-cite.
+Add a paper using arXiv id, DOI, or url and rlist will fetch its metadata automatically.
+Track what you plan to read, are reading, and have read.
+Tag, prioritize, rate and annotate papers.
+Export to BibTeX when it's time to cite.
 
-Single static binary, SQLite storage, ~3 ms startup.
+## Building & installing
 
-## Install
+### Prerequisites
 
-**Prebuilt binaries** (Linux x86_64/arm64, macOS Intel/Apple Silicon) are
-attached to each [GitHub Release](../../releases) — download the archive for
-your platform, then:
+- **Rust 1.88 or newer**, install via [rustup](https://rustup.rs/):
+  `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+  (or update an existing toolchain with `rustup update`)
+- **A C compiler** (`gcc` or `clang`), used once at build time to compile
+  the bundled SQLite
 
-```sh
-tar xzf rlist-*.tar.gz
-cp rlist-*/rlist ~/.local/bin/          # or anywhere on your PATH
-```
-
-The `x86_64-unknown-linux-musl` build is fully static and runs on any Linux
-distro. Each archive also bundles ready-made fish/bash/zsh completion scripts.
-
-**From source:**
+### Build and install
 
 ```sh
+git clone <repo-url> && cd RList
 cargo build --release
 cp target/release/rlist ~/.local/bin/   # or anywhere on your PATH
 ```
 
-Optional shell completions:
+Or let cargo do the copying (installs to `~/.cargo/bin`):
+
+```sh
+cargo install --path
+```
+
+### Shell completions (optional)
 
 ```sh
 rlist completions fish > ~/.config/fish/completions/rlist.fish
@@ -55,7 +55,7 @@ the database in place, so reinstalling later picks your list right back up.
 ## Quick start
 
 ```sh
-# Add papers — metadata is fetched for you
+# Add papers metadata is fetched for you
 rlist add 1706.03762 -t transformers -p high      # arXiv id
 rlist add 10.1038/nature14539 -t deep-learning    # DOI
 rlist add https://arxiv.org/abs/2005.14165        # arXiv URL
@@ -77,7 +77,7 @@ rlist note 3 "key idea: scaled dot-product attention"
 rlist note 3                   # no text -> opens $EDITOR
 rlist show 3                   # full details: abstract, links, notes
 
-# Find things — full-text over titles, authors, abstracts, tags, notes
+# Find things, full-text over titles, authors, abstracts, tags, notes
 rlist search attention transfor     # last term matches as a prefix
 
 # Open in the browser
@@ -120,8 +120,9 @@ rlist tags                     # tags with counts
 | `path` | Print the database location |
 | `completions <shell>` | Shell completion script |
 
-Statuses: `to-read` ○, `reading` ◐, `read` ●, `dropped` ✗ — priorities:
-`high` ↑, `normal`, `low` ↓.
+Statuses: `to-read` ○, `reading` ◐, `read` ●, `dropped`.
+
+Priorities: `high` ↑, `normal`, `low` ↓.
 
 ## Data
 
@@ -131,5 +132,9 @@ Everything lives in one SQLite file: `~/.local/share/rlist/rlist.db`
 
 Metadata sources: the [arXiv API](https://info.arxiv.org/help/api/) for arXiv
 ids and [Crossref](https://api.crossref.org) (with doi.org content negotiation
-as a fallback) for DOIs. Only `add` touches the network — everything else is
-fully offline. `NO_COLOR` and `--no-color` are respected.
+as a fallback) for DOIs.
+
+## AI Notice
+
+This entire repo is almost entirely vibe-coded.
+Use at your own risk.
