@@ -132,7 +132,13 @@ Measured on a 10,000 paper library. Even the heaviest commands stay
 comfortably interactive, and the commands you run most (opening, showing,
 adding) are effectively instant.
 
+<div align="center">
+
 ![Benchmark results: all commands complete in under 350 ms on a 10,000 paper library](docs/benchmark.svg)
+
+</div>
+
+<div align="center">
 
 | Command | Mean | Min | Max |
 |:---|---:|---:|---:|
@@ -145,6 +151,8 @@ adding) are effectively instant.
 | `list -A` (all 10,000 rows) | 115 ms | 104 ms | 133 ms |
 | `search` (FTS5, worst case) | 118 ms | 101 ms | 136 ms |
 | `export -f bibtex` (all 10,000) | 336 ms | 299 ms | 396 ms |
+
+</div>
 
 ### Methodology
 
