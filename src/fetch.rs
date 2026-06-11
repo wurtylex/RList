@@ -222,7 +222,7 @@ pub fn fetch_arxiv(fetch_id: &str, base_id: &str) -> Result<Fetched> {
     let entry = doc
         .descendants()
         .find(|n| n.has_tag_name(("http://www.w3.org/2005/Atom", "entry")))
-        .ok_or_else(|| anyhow!("arXiv returned no entry for {fetch_id} — is the id correct?"))?;
+        .ok_or_else(|| anyhow!("arXiv returned no entry for {fetch_id}, is the id correct?"))?;
 
     let text_of = |local: &str| -> Option<String> {
         entry
@@ -431,7 +431,7 @@ fn fetch_doi_org(doi: &str) -> Result<Fetched> {
 }
 
 fn percent_encode_path(s: &str) -> String {
-    // Encode characters that are problematic in a URL path; keep '/' which is
+    // Encode characters that are problematic in a URL path. Keep '/' which is
     // structural in DOIs and accepted by both APIs.
     let mut out = String::with_capacity(s.len());
     for b in s.bytes() {

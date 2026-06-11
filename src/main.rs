@@ -19,7 +19,7 @@ use std::path::PathBuf;
     version,
     about = "A fast reading list for academic papers",
     long_about = "A fast reading list for academic papers.\n\n\
-        Add papers by arXiv id, DOI, URL, or plain title — metadata (title, authors,\n\
+        Add papers by arXiv id, DOI, URL, or plain title, and metadata (title, authors,\n\
         year, venue, abstract, PDF link) is fetched automatically from arXiv/Crossref.\n\
         Track what you're reading, tag and prioritize, take notes, search everything,\n\
         and export to BibTeX.",
@@ -75,13 +75,13 @@ enum Cmd {
         /// Override / supply the paper URL
         #[arg(long)]
         url: Option<String>,
-        /// Tag(s); repeatable, comma-separated also works
+        /// Tag(s), repeatable (comma-separated also works)
         #[arg(short, long = "tag", value_name = "TAG")]
         tags: Vec<String>,
         /// Priority: high, normal, low
         #[arg(short, long, value_name = "PRIO")]
         priority: Option<String>,
-        /// Initial status (default: to-read) — useful for backfilling read papers
+        /// Initial status (default: to-read), useful for backfilling read papers
         #[arg(long, value_name = "STATUS")]
         status: Option<String>,
         /// Rating 1-5 (implies --status read)
@@ -95,13 +95,13 @@ enum Cmd {
         no_fetch: bool,
     },
 
-    /// List papers (default: your queue — to-read + reading)
+    /// List papers (default: your queue of to-read and reading)
     #[command(alias = "ls")]
     List {
-        /// Filter by status (to-read, reading, read, dropped); repeatable
+        /// Filter by status (to-read, reading, read, dropped), repeatable
         #[arg(short, long = "status", value_name = "STATUS")]
         statuses: Vec<String>,
-        /// Filter by tag (all must match); repeatable
+        /// Filter by tag (all must match), repeatable
         #[arg(short, long = "tag", value_name = "TAG")]
         tags: Vec<String>,
         /// Filter by author substring
@@ -208,10 +208,10 @@ enum Cmd {
         /// arXiv id (empty string clears it)
         #[arg(long, value_name = "ID")]
         arxiv: Option<String>,
-        /// Add tag(s); repeatable
+        /// Add tag(s), repeatable
         #[arg(short = 't', long = "add-tag", value_name = "TAG")]
         add_tags: Vec<String>,
-        /// Remove tag(s); repeatable
+        /// Remove tag(s), repeatable
         #[arg(long = "rm-tag", value_name = "TAG")]
         rm_tags: Vec<String>,
         /// Priority: high, normal, low
@@ -229,7 +229,7 @@ enum Cmd {
     Note {
         /// Paper id (as shown in `rlist list`)
         id: i64,
-        /// Note text; omit to open your editor
+        /// Note text, omit to open your editor
         #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
         text: Vec<String>,
     },
@@ -259,7 +259,7 @@ enum Cmd {
         /// Pick at random from the queue instead of by priority
         #[arg(long)]
         random: bool,
-        /// Restrict to a tag; repeatable
+        /// Restrict to a tag, repeatable
         #[arg(short, long = "tag", value_name = "TAG")]
         tags: Vec<String>,
     },
@@ -278,17 +278,17 @@ enum Cmd {
         /// Write to a file instead of stdout
         #[arg(short, long, value_name = "FILE")]
         output: Option<PathBuf>,
-        /// Only papers with this status; repeatable
+        /// Only papers with this status, repeatable
         #[arg(short, long = "status", value_name = "STATUS")]
         statuses: Vec<String>,
-        /// Only papers with this tag; repeatable
+        /// Only papers with this tag, repeatable
         #[arg(short, long = "tag", value_name = "TAG")]
         tags: Vec<String>,
     },
 
     /// Import papers from a BibTeX or JSON file
     Import {
-        /// File to import (.bib or .json; other extensions are sniffed)
+        /// File to import (.bib or .json, other extensions are sniffed)
         file: PathBuf,
         /// Force format: bibtex or json (default: by file extension)
         #[arg(short, long, value_name = "FMT")]
@@ -310,7 +310,7 @@ enum Cmd {
         but keeps your reading list and notes\n  \
         rlist uninstall --purge   hard: removes EVERYTHING, including the database")]
     Uninstall {
-        /// Also delete the database — reading list, notes, everything
+        /// Also delete the database (reading list, notes, everything)
         #[arg(long)]
         purge: bool,
         /// Don't ask for confirmation
@@ -617,7 +617,7 @@ fn cmd_add(
     anyhow::ensure!(!paper.title.is_empty(), "paper needs a title");
 
     // Dedup on identifiers discovered during the fetch (e.g. a DOI fetch that
-    // resolves to an arXiv id already in the list); warn on duplicate titles.
+    // resolves to an arXiv id already in the list), and warn on duplicate titles.
     if let Some(a) = &paper.arxiv_id
         && let Some(existing) = db::find_by_arxiv(conn, a)?
     {
@@ -630,7 +630,7 @@ fn cmd_add(
     }
     if let Some(existing) = db::find_by_title(conn, &paper.title)? {
         eprintln!(
-            "{} #{existing} has the same title — keeping both",
+            "{} #{existing} has the same title, keeping both",
             paint(YELLOW, "warning:")
         );
     }
@@ -720,7 +720,7 @@ fn cmd_list(
         return Ok(());
     }
     if papers.is_empty() && total > 0 {
-        // Truncated to nothing by -n; the empty-db onboarding hint would lie.
+        // Truncated to nothing by -n, where the empty-db onboarding hint would lie.
         println!(
             "{}",
             paint(
@@ -806,7 +806,7 @@ fn cmd_status_change(
 ) -> Result<()> {
     let rating = rating.map(validate_rating).transpose()?;
     // Validate every id before touching anything, then commit the whole
-    // batch atomically — `rlist done 3 999 5` must not half-apply.
+    // batch atomically, so `rlist done 3 999 5` cannot half-apply.
     let papers: Vec<_> = ids
         .iter()
         .map(|&id| db::get_paper(conn, id))
@@ -886,7 +886,7 @@ fn cmd_edit(
         || status.is_some()
         || rating.is_some();
     if !flags_given {
-        bail!("nothing to change — see `rlist edit --help` for available fields");
+        bail!("nothing to change, see `rlist edit --help` for available fields");
     }
 
     if let Some(t) = title {
@@ -999,7 +999,7 @@ fn cmd_note(conn: &Connection, id: i64, text: &str) -> Result<()> {
         text.trim().to_string()
     };
     if body.is_empty() {
-        bail!("empty note — nothing saved");
+        bail!("empty note, nothing saved");
     }
     db::add_note(conn, id, &body)?;
     output::confirm_line("noted", &p);
@@ -1043,7 +1043,7 @@ fn edit_in_editor(template: &str) -> Result<String> {
 fn cmd_open(conn: &Connection, id: i64, pdf: bool) -> Result<()> {
     let p = db::get_paper(conn, id)?;
     let url = p.best_url(pdf).ok_or_else(|| {
-        anyhow::anyhow!("#{id} has no URL — set one with `rlist edit {id} --url ...`")
+        anyhow::anyhow!("#{id} has no URL, set one with `rlist edit {id} --url ...`")
     })?;
     println!("opening {}", paint(BOLD, url));
     open::that_detached(url).with_context(|| format!("opening {url}"))?;
@@ -1124,7 +1124,7 @@ fn cmd_uninstall(db_path: &std::path::Path, purge: bool, force: bool) -> Result<
         .collect();
 
     // Data targets (hard uninstall only). When the db lives in the default
-    // ~/.local/share/rlist/ directory, remove the whole directory; for a
+    // ~/.local/share/rlist/ directory, remove the whole directory. For a
     // custom --db / $RLIST_DB path, remove just the db and its WAL side files.
     let default_dir = dirs::data_dir().map(|d| d.join("rlist"));
     let owns_dir = purge
@@ -1178,7 +1178,7 @@ fn cmd_uninstall(db_path: &std::path::Path, purge: bool, force: bool) -> Result<
         let mut answer = String::new();
         std::io::stdin().read_line(&mut answer)?;
         if !matches!(answer.trim(), "y" | "Y" | "yes") {
-            println!("aborted — nothing removed");
+            println!("aborted, nothing removed");
             return Ok(());
         }
     }
@@ -1201,7 +1201,7 @@ fn cmd_uninstall(db_path: &std::path::Path, purge: bool, force: bool) -> Result<
         std::fs::remove_dir_all(d).with_context(|| format!("removing {}", d.display()))?;
         println!("removed {}", d.display());
     }
-    // The running binary goes last; unlinking it while running is fine.
+    // The running binary goes last, since unlinking it while running is fine.
     for p in &binaries {
         remove(p)?;
     }
@@ -1236,14 +1236,14 @@ fn cmd_next(conn: &Connection, random: bool, tags: Vec<String>) -> Result<()> {
         if let Some(current) = all.iter().find(|p| p.status == Status::Reading) {
             println!(
                 "{} you're already reading {} {}",
-                paint(DIM, "nothing in to-read —"),
+                paint(DIM, "nothing in to-read,"),
                 paint(BOLD, &format!("#{}", current.id)),
                 output::truncate(&current.title, 60),
             );
         } else {
             println!(
                 "{}",
-                paint(DIM, "queue is empty — add something with `rlist add`")
+                paint(DIM, "queue is empty, add something with `rlist add`")
             );
         }
         return Ok(());
@@ -1320,7 +1320,7 @@ fn cmd_tags(conn: &Connection) -> Result<()> {
     if counts.is_empty() {
         println!(
             "{}",
-            paint(DIM, "no tags yet — add one with `rlist add ... -t <tag>`")
+            paint(DIM, "no tags yet, add one with `rlist add ... -t <tag>`")
         );
         return Ok(());
     }
@@ -1344,7 +1344,7 @@ fn cmd_tags(conn: &Connection) -> Result<()> {
 fn cmd_stats(conn: &Connection) -> Result<()> {
     let papers = db::all_papers(conn)?;
     if papers.is_empty() {
-        println!("{}", paint(DIM, "no papers yet — add one with `rlist add`"));
+        println!("{}", paint(DIM, "no papers yet, add one with `rlist add`"));
         return Ok(());
     }
 
@@ -1492,7 +1492,7 @@ fn cmd_export(
 
 fn export_csv(papers: &[Paper]) -> String {
     fn esc(s: &str) -> String {
-        // RFC 4180: quote on quote, comma, LF — and CR, which also splits
+        // RFC 4180: quote on quote, comma, LF, and also CR, which splits
         // records in most readers.
         if s.contains(['"', ',', '\n', '\r']) {
             format!("\"{}\"", s.replace('"', "\"\""))
@@ -1614,7 +1614,7 @@ fn cmd_import(conn: &Connection, file: &PathBuf, format: Option<String>) -> Resu
 }
 
 /// Import dedup for papers without identifiers: same title alone isn't
-/// enough (different papers share titles); require matching authors, or a
+/// enough (different papers share titles), so require matching authors, or a
 /// matching year when one side has no authors. A bare title-only entry on
 /// both sides still counts as a twin so re-importing a dump stays idempotent.
 fn is_title_twin(conn: &Connection, p: &Paper) -> Result<bool> {

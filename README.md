@@ -28,7 +28,7 @@ cp target/release/rlist ~/.local/bin/   # or anywhere on your PATH
 Or let cargo do the copying (installs to `~/.cargo/bin`):
 
 ```sh
-cargo install --path
+cargo install --path .
 ```
 
 ### Shell completions (optional)
@@ -105,18 +105,18 @@ rlist tags                     # tags with counts
 | Command | What it does |
 |---|---|
 | `add <ref>` | Add by arXiv id, DOI, URL, or plain title. `-t` tag, `-p` priority, `--status`, `-r` rating, `--note`, `--no-fetch` |
-| `list` (`ls`) | List papers. Default shows your queue; `-A` all, `-s` status, `-t` tag, `-a` author, `-y` year, `--sort`, `-R` reverse, `-n` limit, `--json` |
+| `list` (`ls`) | List papers. Default shows your queue. `-A` all, `-s` status, `-t` tag, `-a` author, `-y` year, `--sort`, `-R` reverse, `-n` limit, `--json` |
 | `show <id>` | Full details incl. abstract and notes. `--json` |
-| `search <terms>` | FTS5 full-text search; also matches notes. `find` is an alias |
+| `search <terms>` | FTS5 full-text search that also matches notes. `find` is an alias |
 | `next` | Suggest what to read (priority, then oldest). `--random`, `-t` tag |
 | `start / done / drop <ids>` | Status transitions with timestamps. `done -r 1..5` rates |
-| `edit <id>` | Change any field; `-t`/`--rm-tag` manage tags |
-| `note <id> [text]` | Append a timestamped note; no text opens `$EDITOR` |
+| `edit <id>` | Change any field. `-t`/`--rm-tag` manage tags |
+| `note <id> [text]` | Append a timestamped note. With no text it opens `$EDITOR` |
 | `open <id>` | Open page (or `--pdf`) in your browser |
 | `rm <ids>` | Delete (asks unless `--force`) |
 | `tags` / `stats` | Tag counts / reading statistics |
-| `export` | BibTeX, JSON, or CSV; filterable; `-o` file |
-| `import <file>` | BibTeX or JSON; skips duplicates |
+| `export` | BibTeX, JSON, or CSV. Filterable, and `-o` writes to a file |
+| `import <file>` | BibTeX or JSON, skips duplicates |
 | `path` | Print the database location |
 | `completions <shell>` | Shell completion script |
 
@@ -124,11 +124,58 @@ Statuses: `to-read` ○, `reading` ◐, `read` ●, `dropped`.
 
 Priorities: `high` ↑, `normal`, `low` ↓.
 
+## Benchmarks
+
+Measured on a 10,000 paper library. Even the heaviest commands stay
+comfortably interactive, and the commands you run most (opening, showing,
+adding) are effectively instant.
+
+![Benchmark results: all commands complete in under 350 ms on a 10,000 paper library](docs/benchmark.svg)
+
+| Command | Mean | Min | Max |
+|:---|---:|---:|---:|
+| `path` (startup only) | 1.1 ms | 1.0 ms | 1.3 ms |
+| `show` (one paper with notes) | 1.4 ms | 1.2 ms | 1.9 ms |
+| `add` (manual entry, write path) | 8.8 ms | 8.2 ms | 10.9 ms |
+| `stats` | 73 ms | 64 ms | 88 ms |
+| `next` | 86 ms | 73 ms | 122 ms |
+| `list` (queue view) | 99 ms | 87 ms | 119 ms |
+| `list -A` (all 10,000 rows) | 115 ms | 104 ms | 133 ms |
+| `search` (FTS5, worst case) | 118 ms | 101 ms | 136 ms |
+| `export -f bibtex` (all 10,000) | 336 ms | 299 ms | 396 ms |
+
+### Methodology
+
+- **Hardware:** Intel Core i7-8650U (4 cores / 8 threads), NVMe SSD,
+  Arch Linux. A modest 2018 laptop CPU, so newer machines should be faster.
+- **Software:** rlist 0.1.0 built with `cargo build --release --locked`
+  (rustc 1.94.0), measured with [hyperfine](https://github.com/sharkdp/hyperfine)
+  1.20.0 using 3 warmup runs followed by 20 timed runs per command.
+- **Dataset:** 10,000 synthetic papers generated with a fixed random seed.
+  Each has a title, 1 to 6 authors, a year, a venue, an arXiv id, tags, and a
+  100 word abstract. The resulting SQLite database is 17 MB. Statuses are
+  distributed 60% to-read, 30% read, 5% reading, 5% dropped.
+- **Worst cases on purpose:** the `search` query matches nearly the entire
+  library (the synthetic abstracts share a small vocabulary), and `list -A`
+  renders every row. A realistic search that matches dozens of papers is
+  faster than the number above.
+- **Write isolation:** the `add` benchmark restores a pristine copy of the
+  database before every run, so each timing measures one insert into a
+  10,000 paper library.
+- One-time bulk `import` of the same 10,000 paper JSON file takes about
+  33 seconds, dominated by per-entry duplicate checking.
+
+Reproduce with `scripts/bench.sh` (requires hyperfine and python3). It
+builds the binary, generates the dataset, prints this table, and renders
+the chart above to `docs/benchmark.svg` (via `scripts/bench_chart.py`, which
+has no dependencies beyond the standard library). Pass a different paper
+count as the first argument to scale the test.
+
 ## Data
 
 Everything lives in one SQLite file: `~/.local/share/rlist/rlist.db`
-(override with `--db` or `$RLIST_DB`). Back it up by copying the file;
-`rlist export -f json` is a portable full dump including notes.
+(override with `--db` or `$RLIST_DB`). Back it up by copying the file,
+or use `rlist export -f json` for a portable full dump including notes.
 
 Metadata sources: the [arXiv API](https://info.arxiv.org/help/api/) for arXiv
 ids and [Crossref](https://api.crossref.org) (with doi.org content negotiation

@@ -24,7 +24,7 @@ pub fn open(path: &Path) -> Result<Connection> {
     }
     let conn =
         Connection::open(path).with_context(|| format!("opening database {}", path.display()))?;
-    // WAL needs to create side files next to the db; tolerate failure so
+    // WAL needs to create side files next to the db. Tolerate failure so
     // read-only setups (unwritable directory) can still run read commands.
     let _ = conn.pragma_update(None, "journal_mode", "WAL");
     conn.pragma_update(None, "foreign_keys", "ON")
@@ -294,7 +294,7 @@ pub fn search(conn: &Connection, query: &str) -> Result<Vec<Paper>> {
         return Ok(Vec::new());
     }
 
-    // Quote each term so user input can't break FTS5 query syntax; the last
+    // Quote each term so user input can't break FTS5 query syntax. The last
     // term matches as a prefix so `rlist search transfor` finds transformers.
     let fts_query = terms
         .iter()
@@ -310,17 +310,31 @@ pub fn search(conn: &Connection, query: &str) -> Result<Vec<Paper>> {
         .collect::<Vec<_>>()
         .join(" ");
 
-    let mut ids: Vec<i64> = Vec::new();
-    let mut stmt =
-        conn.prepare("SELECT rowid FROM papers_fts WHERE papers_fts MATCH ?1 ORDER BY rank")?;
-    let rows = stmt.query_map([&fts_query], |r| r.get::<_, i64>(0))?;
-    for id in rows {
-        ids.push(id?);
+    // One joined query for all FTS matches. Loading each hit individually
+    // (get_paper per id) made broad searches scale with the library size.
+    // Columns must be qualified because papers_fts shares their names.
+    let qualified = PAPER_COLS
+        .split(',')
+        .map(|c| format!("papers.{}", c.trim()))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let mut papers: Vec<Paper> = Vec::new();
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {qualified} FROM papers JOIN papers_fts ON papers.id = papers_fts.rowid
+         WHERE papers_fts MATCH ?1 ORDER BY rank"
+    ))?;
+    let rows = stmt.query_map([&fts_query], paper_from_row)?;
+    for p in rows {
+        papers.push(p?);
     }
 
     // Also match papers whose notes contain every term.
     let like_clauses = vec!["body LIKE ? ESCAPE '\\'"; terms.len()].join(" AND ");
-    let sql = format!("SELECT DISTINCT paper_id FROM notes WHERE {like_clauses}");
+    let sql = format!(
+        "SELECT {PAPER_COLS} FROM papers
+         WHERE id IN (SELECT DISTINCT paper_id FROM notes WHERE {like_clauses})
+         ORDER BY id"
+    );
     let mut stmt = conn.prepare(&sql)?;
     let like_params: Vec<String> = terms
         .iter()
@@ -334,15 +348,15 @@ pub fn search(conn: &Connection, query: &str) -> Result<Vec<Paper>> {
             format!("%{t}%")
         })
         .collect();
-    let rows = stmt.query_map(rusqlite::params_from_iter(like_params.iter()), |r| {
-        r.get::<_, i64>(0)
-    })?;
-    for id in rows {
-        let id = id?;
-        if !ids.contains(&id) {
-            ids.push(id);
+    let rows = stmt.query_map(
+        rusqlite::params_from_iter(like_params.iter()),
+        paper_from_row,
+    )?;
+    for p in rows {
+        let p = p?;
+        if !papers.iter().any(|x| x.id == p.id) {
+            papers.push(p);
         }
     }
-
-    ids.iter().map(|&id| get_paper(conn, id)).collect()
+    Ok(papers)
 }

@@ -67,7 +67,7 @@ fn bijective_suffix(mut n: usize) -> String {
 
 fn bib_escape(s: &str) -> String {
     // Unbalanced braces would terminate the field value early and corrupt
-    // the whole file; balanced ones (protective {DNA}) are legal — keep them.
+    // the whole file. Balanced ones (protective {DNA}) are legal and kept.
     let s = if braces_balanced(s) {
         s.to_string()
     } else {
@@ -177,7 +177,7 @@ pub fn export(papers: &[Paper]) -> String {
 
 #[derive(Debug)]
 pub struct BibEntry {
-    #[allow(dead_code)] // used in tests; kept for parser completeness
+    #[allow(dead_code)] // used in tests, kept for parser completeness
     pub entry_type: String,
     pub fields: HashMap<String, String>,
 }
@@ -402,7 +402,7 @@ fn decode_tex(s: &str) -> String {
         }
         let cmd = chars[i + 1];
 
-        // Symbol accents: \'e, \'{e}, \"u — anything in accent_mark that
+        // Symbol accents: \'e, \'{e}, \"u. Anything in accent_mark that
         // isn't a letter (letter-named ones are handled below to avoid
         // colliding with word commands like \v vs \venue).
         if !cmd.is_ascii_alphabetic() {
@@ -468,7 +468,7 @@ fn accent_target(chars: &[char], at: usize) -> Option<(char, usize)> {
         return None;
     }
     if chars[at] == '{' {
-        // {e} or {\i} — under an accent, TeX's dotless \i/\j stand for plain
+        // {e} or {\i}. Under an accent, TeX's dotless \i/\j stand for plain
         // i/j (the accent replaces the dot), so í composes correctly.
         if at + 2 < chars.len() && chars[at + 1] == '\\' && chars[at + 3..].first() == Some(&'}') {
             return Some((chars[at + 2], at + 4));
@@ -484,7 +484,7 @@ fn accent_target(chars: &[char], at: usize) -> Option<(char, usize)> {
     None
 }
 
-/// "Last, First" -> "First Last"; passthrough otherwise.
+/// "Last, First" -> "First Last", passthrough otherwise.
 pub fn normalize_author(name: &str) -> String {
     match name.split_once(',') {
         Some((last, first)) => squish(&format!("{} {}", first.trim(), last.trim())),

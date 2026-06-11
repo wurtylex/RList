@@ -102,7 +102,7 @@ pub fn table(papers: &[Paper]) {
             "{}",
             paint(
                 DIM,
-                "nothing here — add a paper with `rlist add <arxiv-id|doi|url|title>`"
+                "nothing here, add a paper with `rlist add <arxiv-id|doi|url|title>`"
             )
         );
         return;
@@ -274,7 +274,7 @@ pub fn detail(p: &Paper) {
         println!();
         println!("{}", paint(DIM, &format!("  notes ({})", p.notes.len())));
         for n in &p.notes {
-            // "[YYYY-MM-DD] " is 13 columns; continuations hang to match.
+            // "[YYYY-MM-DD] " is 13 columns, and continuations hang to match.
             println!(
                 "  {} {}",
                 paint(MAGENTA, &format!("[{}]", date_of(&n.created_at))),
