@@ -209,6 +209,27 @@ fn agent() -> ureq::Agent {
         .build()
 }
 
+/// Download a PDF, verifying the payload actually is one (arXiv and
+/// publishers sometimes answer with an HTML error page). Capped at 200 MB.
+pub fn download_pdf(url: &str) -> Result<Vec<u8>> {
+    use std::io::Read;
+    let resp = agent()
+        .get(url)
+        .call()
+        .with_context(|| format!("downloading {url}"))?;
+    let mut data = Vec::new();
+    resp.into_reader()
+        .take(200 * 1024 * 1024)
+        .read_to_end(&mut data)
+        .with_context(|| format!("reading {url}"))?;
+    anyhow::ensure!(
+        data.starts_with(b"%PDF"),
+        "{url} did not return a PDF (got {} bytes of something else)",
+        data.len()
+    );
+    Ok(data)
+}
+
 pub fn fetch_arxiv(fetch_id: &str, base_id: &str) -> Result<Fetched> {
     let url = format!("https://export.arxiv.org/api/query?id_list={fetch_id}&max_results=1");
     let body = agent()

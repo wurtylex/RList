@@ -1,65 +1,64 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="730" height="336" viewBox="0 0 730 336" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">
-<text x="230" y="16" fill="#888" font-size="13">mean runtime, log scale (whiskers show min and max, 20 runs each)</text>
-<line x1="269.2" y1="30" x2="269.2" y2="312" stroke="#888" stroke-opacity="0.25" stroke-dasharray="3,3"/>
-<text x="269.2" y="328" fill="#888" text-anchor="middle">1 ms</text>
-<line x1="399.5" y1="30" x2="399.5" y2="312" stroke="#888" stroke-opacity="0.25" stroke-dasharray="3,3"/>
-<text x="399.5" y="328" fill="#888" text-anchor="middle">10 ms</text>
-<line x1="529.7" y1="30" x2="529.7" y2="312" stroke="#888" stroke-opacity="0.25" stroke-dasharray="3,3"/>
-<text x="529.7" y="328" fill="#888" text-anchor="middle">100 ms</text>
-<line x1="660.0" y1="30" x2="660.0" y2="312" stroke="#888" stroke-opacity="0.25" stroke-dasharray="3,3"/>
-<text x="660.0" y="328" fill="#888" text-anchor="middle">1000 ms</text>
-<text x="220" y="54.0" fill="#888" text-anchor="end">path (startup only)</text>
-<rect x="230.0" y="43" width="44.6" height="14" rx="2" fill="#2f9e8f"/>
-<line x1="269.5" y1="50.0" x2="285.1" y2="50.0" stroke="#888" stroke-width="1.5"/>
-<line x1="269.5" y1="46.0" x2="269.5" y2="54.0" stroke="#888" stroke-width="1.5"/>
-<line x1="285.1" y1="46.0" x2="285.1" y2="54.0" stroke="#888" stroke-width="1.5"/>
-<text x="293.1" y="54.0" fill="#888">1.1 ms</text>
-<text x="220" y="84.0" fill="#888" text-anchor="end">show + notes</text>
-<rect x="230.0" y="73" width="59.2" height="14" rx="2" fill="#2f9e8f"/>
-<line x1="279.7" y1="80.0" x2="305.9" y2="80.0" stroke="#888" stroke-width="1.5"/>
-<line x1="279.7" y1="76.0" x2="279.7" y2="84.0" stroke="#888" stroke-width="1.5"/>
-<line x1="305.9" y1="76.0" x2="305.9" y2="84.0" stroke="#888" stroke-width="1.5"/>
-<text x="313.9" y="84.0" fill="#888">1.4 ms</text>
-<text x="220" y="114.0" fill="#888" text-anchor="end">add (write path)</text>
-<rect x="230.0" y="103" width="162.2" height="14" rx="2" fill="#2f9e8f"/>
-<line x1="388.1" y1="110.0" x2="404.1" y2="110.0" stroke="#888" stroke-width="1.5"/>
-<line x1="388.1" y1="106.0" x2="388.1" y2="114.0" stroke="#888" stroke-width="1.5"/>
-<line x1="404.1" y1="106.0" x2="404.1" y2="114.0" stroke="#888" stroke-width="1.5"/>
-<text x="412.1" y="114.0" fill="#888">8.8 ms</text>
-<text x="220" y="144.0" fill="#888" text-anchor="end">stats</text>
-<rect x="230.0" y="133" width="282.1" height="14" rx="2" fill="#2f9e8f"/>
-<line x1="504.7" y1="140.0" x2="522.7" y2="140.0" stroke="#888" stroke-width="1.5"/>
-<line x1="504.7" y1="136.0" x2="504.7" y2="144.0" stroke="#888" stroke-width="1.5"/>
-<line x1="522.7" y1="136.0" x2="522.7" y2="144.0" stroke="#888" stroke-width="1.5"/>
-<text x="530.7" y="144.0" fill="#888">73 ms</text>
-<text x="220" y="174.0" fill="#888" text-anchor="end">next</text>
-<rect x="230.0" y="163" width="291.1" height="14" rx="2" fill="#2f9e8f"/>
-<line x1="511.9" y1="170.0" x2="540.9" y2="170.0" stroke="#888" stroke-width="1.5"/>
-<line x1="511.9" y1="166.0" x2="511.9" y2="174.0" stroke="#888" stroke-width="1.5"/>
-<line x1="540.9" y1="166.0" x2="540.9" y2="174.0" stroke="#888" stroke-width="1.5"/>
-<text x="548.9" y="174.0" fill="#888">86 ms</text>
-<text x="220" y="204.0" fill="#888" text-anchor="end">list (queue view)</text>
-<rect x="230.0" y="193" width="299.4" height="14" rx="2" fill="#2f9e8f"/>
-<line x1="522.1" y1="200.0" x2="539.6" y2="200.0" stroke="#888" stroke-width="1.5"/>
-<line x1="522.1" y1="196.0" x2="522.1" y2="204.0" stroke="#888" stroke-width="1.5"/>
-<line x1="539.6" y1="196.0" x2="539.6" y2="204.0" stroke="#888" stroke-width="1.5"/>
-<text x="547.6" y="204.0" fill="#888">99 ms</text>
-<text x="220" y="234.0" fill="#888" text-anchor="end">list -A (10000 rows)</text>
-<rect x="230.0" y="223" width="307.7" height="14" rx="2" fill="#2f9e8f"/>
-<line x1="532.0" y1="230.0" x2="545.7" y2="230.0" stroke="#888" stroke-width="1.5"/>
-<line x1="532.0" y1="226.0" x2="532.0" y2="234.0" stroke="#888" stroke-width="1.5"/>
-<line x1="545.7" y1="226.0" x2="545.7" y2="234.0" stroke="#888" stroke-width="1.5"/>
-<text x="553.7" y="234.0" fill="#888">115 ms</text>
-<text x="220" y="264.0" fill="#888" text-anchor="end">search (FTS5)</text>
-<rect x="230.0" y="253" width="308.9" height="14" rx="2" fill="#2f9e8f"/>
-<line x1="530.6" y1="260.0" x2="547.3" y2="260.0" stroke="#888" stroke-width="1.5"/>
-<line x1="530.6" y1="256.0" x2="530.6" y2="264.0" stroke="#888" stroke-width="1.5"/>
-<line x1="547.3" y1="256.0" x2="547.3" y2="264.0" stroke="#888" stroke-width="1.5"/>
-<text x="555.3" y="264.0" fill="#888">118 ms</text>
-<text x="220" y="294.0" fill="#888" text-anchor="end">export bibtex</text>
-<rect x="230.0" y="283" width="368.3" height="14" rx="2" fill="#2f9e8f"/>
-<line x1="591.8" y1="290.0" x2="607.6" y2="290.0" stroke="#888" stroke-width="1.5"/>
-<line x1="591.8" y1="286.0" x2="591.8" y2="294.0" stroke="#888" stroke-width="1.5"/>
-<line x1="607.6" y1="286.0" x2="607.6" y2="294.0" stroke="#888" stroke-width="1.5"/>
-<text x="615.6" y="294.0" fill="#888">336 ms</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="730" height="314" viewBox="0 0 730 314" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">
+<line x1="269.2" y1="8" x2="269.2" y2="290" stroke="#888" stroke-opacity="0.25" stroke-dasharray="3,3"/>
+<text x="269.2" y="306" fill="#888" text-anchor="middle">1 ms</text>
+<line x1="399.5" y1="8" x2="399.5" y2="290" stroke="#888" stroke-opacity="0.25" stroke-dasharray="3,3"/>
+<text x="399.5" y="306" fill="#888" text-anchor="middle">10 ms</text>
+<line x1="529.7" y1="8" x2="529.7" y2="290" stroke="#888" stroke-opacity="0.25" stroke-dasharray="3,3"/>
+<text x="529.7" y="306" fill="#888" text-anchor="middle">100 ms</text>
+<line x1="660.0" y1="8" x2="660.0" y2="290" stroke="#888" stroke-opacity="0.25" stroke-dasharray="3,3"/>
+<text x="660.0" y="306" fill="#888" text-anchor="middle">1000 ms</text>
+<text x="220" y="32.0" fill="#888" text-anchor="end">path (startup only)</text>
+<rect x="230.0" y="21" width="44.6" height="14" rx="2" fill="#2f9e8f"/>
+<line x1="269.2" y1="28.0" x2="284.1" y2="28.0" stroke="#888" stroke-width="1.5"/>
+<line x1="269.2" y1="24.0" x2="269.2" y2="32.0" stroke="#888" stroke-width="1.5"/>
+<line x1="284.1" y1="24.0" x2="284.1" y2="32.0" stroke="#888" stroke-width="1.5"/>
+<text x="292.1" y="32.0" fill="#888">1.1 ms</text>
+<text x="220" y="62.0" fill="#888" text-anchor="end">show + notes</text>
+<rect x="230.0" y="51" width="58.2" height="14" rx="2" fill="#2f9e8f"/>
+<line x1="279.5" y1="58.0" x2="305.5" y2="58.0" stroke="#888" stroke-width="1.5"/>
+<line x1="279.5" y1="54.0" x2="279.5" y2="62.0" stroke="#888" stroke-width="1.5"/>
+<line x1="305.5" y1="54.0" x2="305.5" y2="62.0" stroke="#888" stroke-width="1.5"/>
+<text x="313.5" y="62.0" fill="#888">1.4 ms</text>
+<text x="220" y="92.0" fill="#888" text-anchor="end">add (write path)</text>
+<rect x="230.0" y="81" width="162.2" height="14" rx="2" fill="#2f9e8f"/>
+<line x1="388.2" y1="88.0" x2="404.4" y2="88.0" stroke="#888" stroke-width="1.5"/>
+<line x1="388.2" y1="84.0" x2="388.2" y2="92.0" stroke="#888" stroke-width="1.5"/>
+<line x1="404.4" y1="84.0" x2="404.4" y2="92.0" stroke="#888" stroke-width="1.5"/>
+<text x="412.4" y="92.0" fill="#888">8.8 ms</text>
+<text x="220" y="122.0" fill="#888" text-anchor="end">stats</text>
+<rect x="230.0" y="111" width="282.2" height="14" rx="2" fill="#2f9e8f"/>
+<line x1="504.7" y1="118.0" x2="522.6" y2="118.0" stroke="#888" stroke-width="1.5"/>
+<line x1="504.7" y1="114.0" x2="504.7" y2="122.0" stroke="#888" stroke-width="1.5"/>
+<line x1="522.6" y1="114.0" x2="522.6" y2="122.0" stroke="#888" stroke-width="1.5"/>
+<text x="530.6" y="122.0" fill="#888">73 ms</text>
+<text x="220" y="152.0" fill="#888" text-anchor="end">next</text>
+<rect x="230.0" y="141" width="291.1" height="14" rx="2" fill="#2f9e8f"/>
+<line x1="511.9" y1="148.0" x2="540.9" y2="148.0" stroke="#888" stroke-width="1.5"/>
+<line x1="511.9" y1="144.0" x2="511.9" y2="152.0" stroke="#888" stroke-width="1.5"/>
+<line x1="540.9" y1="144.0" x2="540.9" y2="152.0" stroke="#888" stroke-width="1.5"/>
+<text x="548.9" y="152.0" fill="#888">86 ms</text>
+<text x="220" y="182.0" fill="#888" text-anchor="end">list (queue view)</text>
+<rect x="230.0" y="171" width="299.5" height="14" rx="2" fill="#2f9e8f"/>
+<line x1="522.1" y1="178.0" x2="539.6" y2="178.0" stroke="#888" stroke-width="1.5"/>
+<line x1="522.1" y1="174.0" x2="522.1" y2="182.0" stroke="#888" stroke-width="1.5"/>
+<line x1="539.6" y1="174.0" x2="539.6" y2="182.0" stroke="#888" stroke-width="1.5"/>
+<text x="547.6" y="182.0" fill="#888">100 ms</text>
+<text x="220" y="212.0" fill="#888" text-anchor="end">list -A (10000 rows)</text>
+<rect x="230.0" y="201" width="307.7" height="14" rx="2" fill="#2f9e8f"/>
+<line x1="532.0" y1="208.0" x2="545.7" y2="208.0" stroke="#888" stroke-width="1.5"/>
+<line x1="532.0" y1="204.0" x2="532.0" y2="212.0" stroke="#888" stroke-width="1.5"/>
+<line x1="545.7" y1="204.0" x2="545.7" y2="212.0" stroke="#888" stroke-width="1.5"/>
+<text x="553.7" y="212.0" fill="#888">115 ms</text>
+<text x="220" y="242.0" fill="#888" text-anchor="end">search (FTS5)</text>
+<rect x="230.0" y="231" width="309.0" height="14" rx="2" fill="#2f9e8f"/>
+<line x1="530.6" y1="238.0" x2="547.3" y2="238.0" stroke="#888" stroke-width="1.5"/>
+<line x1="530.6" y1="234.0" x2="530.6" y2="242.0" stroke="#888" stroke-width="1.5"/>
+<line x1="547.3" y1="234.0" x2="547.3" y2="242.0" stroke="#888" stroke-width="1.5"/>
+<text x="555.3" y="242.0" fill="#888">118 ms</text>
+<text x="220" y="272.0" fill="#888" text-anchor="end">export bibtex</text>
+<rect x="230.0" y="261" width="368.3" height="14" rx="2" fill="#2f9e8f"/>
+<line x1="591.8" y1="268.0" x2="607.6" y2="268.0" stroke="#888" stroke-width="1.5"/>
+<line x1="591.8" y1="264.0" x2="591.8" y2="272.0" stroke="#888" stroke-width="1.5"/>
+<line x1="607.6" y1="264.0" x2="607.6" y2="272.0" stroke="#888" stroke-width="1.5"/>
+<text x="615.6" y="272.0" fill="#888">336 ms</text>
 </svg>

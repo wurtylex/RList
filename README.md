@@ -46,7 +46,8 @@ Uninstalling is built in, with two modes:
 ```sh
 rlist uninstall           # soft: removes the binary and shell completions,
                           # but keeps your reading list and notes
-rlist uninstall --purge   # hard: removes EVERYTHING, including the database
+rlist uninstall --purge   # hard: removes EVERYTHING, including the
+                          # database and any cached PDFs
 ```
 
 Both ask for confirmation first (`--force` skips it). A soft uninstall leaves
@@ -80,9 +81,10 @@ rlist show 3                   # full details: abstract, links, notes
 # Find things, full-text over titles, authors, abstracts, tags, notes
 rlist search attention transfor     # last term matches as a prefix
 
-# Open in the browser
-rlist open 3                   # paper page
-rlist open 3 --pdf             # PDF link
+# Open papers
+rlist open 3                   # paper page, in the browser
+rlist open 3 --pdf             # download the PDF (cached) and open it
+                               # in your local PDF viewer
 
 # Slice your list
 rlist list -s read --sort rating         # best papers you've read
@@ -112,7 +114,7 @@ rlist tags                     # tags with counts
 | `start / done / drop <ids>` | Status transitions with timestamps. `done -r 1..5` rates |
 | `edit <id>` | Change any field. `-t`/`--rm-tag` manage tags |
 | `note <id> [text]` | Append a timestamped note. With no text it opens `$EDITOR` |
-| `open <id>` | Open page (or `--pdf`) in your browser |
+| `open <id>` | Open the paper page in your browser. `--pdf` downloads the PDF (cached) and opens it in your PDF viewer |
 | `rm <ids>` | Delete (asks unless `--force`) |
 | `tags` / `stats` | Tag counts / reading statistics |
 | `export` | BibTeX, JSON, or CSV. Filterable, and `-o` writes to a file |
@@ -150,7 +152,8 @@ adding) are effectively instant.
   Arch Linux. A modest 2018 laptop CPU, so newer machines should be faster.
 - **Software:** rlist 0.1.0 built with `cargo build --release --locked`
   (rustc 1.94.0), measured with [hyperfine](https://github.com/sharkdp/hyperfine)
-  1.20.0 using 3 warmup runs followed by 20 timed runs per command.
+  1.20.0 using 3 warmup runs followed by 20 timed runs per command. The chart
+  shows mean runtimes on a log scale, with whiskers marking min and max.
 - **Dataset:** 10,000 synthetic papers generated with a fixed random seed.
   Each has a title, 1 to 6 authors, a year, a venue, an arXiv id, tags, and a
   100 word abstract. The resulting SQLite database is 17 MB. Statuses are
@@ -174,7 +177,8 @@ count as the first argument to scale the test.
 ## Data
 
 Everything lives in one SQLite file: `~/.local/share/rlist/rlist.db`
-(override with `--db` or `$RLIST_DB`). Back it up by copying the file,
+(override with `--db` or `$RLIST_DB`). PDFs fetched by `open --pdf` are
+cached in `~/.cache/rlist/`. Back up the database by copying the file,
 or use `rlist export -f json` for a portable full dump including notes.
 
 Metadata sources: the [arXiv API](https://info.arxiv.org/help/api/) for arXiv

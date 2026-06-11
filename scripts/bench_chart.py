@@ -33,7 +33,7 @@ def main() -> None:
     rows.sort(key=lambda r: r["mean"])
 
     # Layout
-    label_w, chart_w, row_h, top, bottom = 230, 430, 30, 36, 30
+    label_w, chart_w, row_h, top, bottom = 230, 430, 30, 14, 30
     width = label_w + chart_w + 70
     height = top + row_h * len(rows) + bottom
     axis_lo, axis_hi = 0.5, 1000.0  # ms, log scale
@@ -48,8 +48,6 @@ def main() -> None:
     svg = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
         f'viewBox="0 0 {width} {height}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">',
-        f'<text x="{label_w}" y="16" fill="#888" font-size="13">mean runtime, log scale '
-        f"(whiskers show min and max, 20 runs each)</text>",
     ]
 
     # Gridlines at 1, 10, 100, 1000 ms

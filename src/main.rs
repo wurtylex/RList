@@ -234,11 +234,11 @@ enum Cmd {
         text: Vec<String>,
     },
 
-    /// Open a paper's page (or PDF) in the browser
+    /// Open a paper's page in the browser, or its PDF in your PDF viewer
     Open {
         /// Paper id (as shown in `rlist list`)
         id: i64,
-        /// Prefer the PDF link
+        /// Download the PDF (cached locally) and open it in your PDF viewer
         #[arg(short, long)]
         pdf: bool,
     },
@@ -1045,9 +1045,98 @@ fn cmd_open(conn: &Connection, id: i64, pdf: bool) -> Result<()> {
     let url = p.best_url(pdf).ok_or_else(|| {
         anyhow::anyhow!("#{id} has no URL, set one with `rlist edit {id} --url ...`")
     })?;
+
+    // --pdf downloads the file (once) and opens it locally, so it lands in
+    // your PDF viewer instead of a browser tab. Falls back to the browser
+    // when no PDF viewer is configured, the download fails, or the link
+    // doesn't return a PDF.
+    if pdf {
+        let open_in_browser = |reason: &str| -> Result<()> {
+            eprintln!(
+                "{}",
+                paint(DIM, &format!("{reason}, opening in the browser instead"))
+            );
+            println!("opening {}", paint(BOLD, url));
+            open::that_detached(url).with_context(|| format!("opening {url}"))
+        };
+
+        if !has_pdf_handler() {
+            return open_in_browser("no PDF viewer is set");
+        }
+
+        let path = cached_pdf_path(id, url);
+        if !path.is_file() {
+            eprintln!("{}", paint(DIM, &format!("downloading {url} …")));
+            match fetch::download_pdf(url) {
+                Ok(bytes) => {
+                    if let Some(parent) = path.parent() {
+                        std::fs::create_dir_all(parent)
+                            .with_context(|| format!("creating {}", parent.display()))?;
+                    }
+                    let tmp = path.with_extension("part");
+                    std::fs::write(&tmp, &bytes)
+                        .with_context(|| format!("writing {}", tmp.display()))?;
+                    std::fs::rename(&tmp, &path)?;
+                }
+                Err(e) => {
+                    eprintln!("{} {e:#}", paint(YELLOW, "warning:"));
+                    return open_in_browser("download failed");
+                }
+            }
+        }
+        println!(
+            "opening {} in your PDF viewer",
+            paint(BOLD, &path.display().to_string())
+        );
+        if let Err(e) = open::that_detached(&path) {
+            eprintln!(
+                "{} could not launch a viewer for {}: {e}",
+                paint(YELLOW, "warning:"),
+                path.display()
+            );
+            return open_in_browser("viewer failed");
+        }
+        return Ok(());
+    }
+
     println!("opening {}", paint(BOLD, url));
     open::that_detached(url).with_context(|| format!("opening {url}"))?;
     Ok(())
+}
+
+/// Is any application registered to handle PDFs? On Linux we ask xdg-mime,
+/// because launching xdg-open with no association either fails or dumps the
+/// file on whatever generic fallback exists. macOS and Windows always have
+/// a built-in PDF handler.
+fn has_pdf_handler() -> bool {
+    if !cfg!(target_os = "linux") {
+        return true;
+    }
+    match std::process::Command::new("xdg-mime")
+        .args(["query", "default", "application/pdf"])
+        .output()
+    {
+        Ok(out) => out.status.success() && !String::from_utf8_lossy(&out.stdout).trim().is_empty(),
+        // xdg-mime itself is missing, let xdg-open try its own fallbacks.
+        Err(_) => true,
+    }
+}
+
+pub fn cache_dir() -> PathBuf {
+    dirs::cache_dir()
+        .unwrap_or_else(std::env::temp_dir)
+        .join("rlist")
+}
+
+/// Cache file for a paper's PDF. The URL hash keeps a stale copy from being
+/// reused after the paper's pdf_url changes.
+fn cached_pdf_path(id: i64, url: &str) -> PathBuf {
+    let mut h: u64 = 0xcbf29ce484222325;
+    for b in url.bytes() {
+        h ^= u64::from(b);
+        h = h.wrapping_mul(0x100000001b3);
+    }
+    cache_dir().join(format!("{id}-{:08x}.pdf", (h >> 32) as u32 ^ h as u32))
 }
 
 fn cmd_rm(conn: &Connection, ids: &[i64], force: bool) -> Result<()> {
@@ -1061,7 +1150,7 @@ fn cmd_rm(conn: &Connection, ids: &[i64], force: bool) -> Result<()> {
         let id = p.id;
         if !force {
             if !std::io::stdin().is_terminal() {
-                bail!("refusing to delete without confirmation; use --force");
+                bail!("refusing to delete without confirmation, use --force");
             }
             eprint!(
                 "delete {} {}? [y/N] ",
@@ -1142,6 +1231,9 @@ fn cmd_uninstall(db_path: &std::path::Path, purge: bool, force: bool) -> Result<
             }
         }
     }
+    // Cached PDF downloads are re-downloadable, so purge removes them too.
+    let pdf_cache = cache_dir();
+    let purge_cache = purge && pdf_cache.is_dir();
 
     println!(
         "{} uninstall will remove:",
@@ -1161,6 +1253,9 @@ fn cmd_uninstall(db_path: &std::path::Path, purge: bool, force: bool) -> Result<
             paint(RED, "(your entire reading list)")
         );
     }
+    if purge_cache {
+        println!("  {}  {}", pdf_cache.display(), paint(DIM, "(cached PDFs)"));
+    }
     if !purge {
         println!(
             "your reading list at {} will be {}",
@@ -1171,7 +1266,7 @@ fn cmd_uninstall(db_path: &std::path::Path, purge: bool, force: bool) -> Result<
 
     if !force {
         if !std::io::stdin().is_terminal() {
-            bail!("refusing to uninstall without confirmation; use --force");
+            bail!("refusing to uninstall without confirmation, use --force");
         }
         eprint!("proceed? [y/N] ");
         std::io::stderr().flush()?;
@@ -1201,6 +1296,11 @@ fn cmd_uninstall(db_path: &std::path::Path, purge: bool, force: bool) -> Result<
         std::fs::remove_dir_all(d).with_context(|| format!("removing {}", d.display()))?;
         println!("removed {}", d.display());
     }
+    if purge_cache && pdf_cache.is_dir() {
+        std::fs::remove_dir_all(&pdf_cache)
+            .with_context(|| format!("removing {}", pdf_cache.display()))?;
+        println!("removed {}", pdf_cache.display());
+    }
     // The running binary goes last, since unlinking it while running is fine.
     for p in &binaries {
         remove(p)?;
@@ -1210,7 +1310,7 @@ fn cmd_uninstall(db_path: &std::path::Path, purge: bool, force: bool) -> Result<
         println!("{} rlist is fully uninstalled", paint(GREEN, "done:"));
     } else {
         println!(
-            "{} rlist removed; your data is still at {}\n      \
+            "{} rlist removed, your data is still at {}\n      \
              (reinstall to pick it back up, or delete it manually)",
             paint(GREEN, "done:"),
             db_path.display()
