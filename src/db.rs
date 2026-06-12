@@ -1,5 +1,5 @@
 use crate::model::{Note, Paper, Priority, Status};
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use rusqlite::{Connection, Row, params};
 use std::path::{Path, PathBuf};
 
@@ -284,6 +284,52 @@ pub fn get_notes(conn: &Connection, paper_id: i64) -> Result<Vec<Note>> {
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+}
+
+/// Row id of the Nth note on a paper (1-based, the numbering `rlist show`
+/// displays). Note numbers shift down when an earlier note is deleted.
+fn nth_note_id(conn: &Connection, paper_id: i64, n: usize) -> Result<i64> {
+    get_paper(conn, paper_id)?;
+    let ids: Vec<i64> = conn
+        .prepare("SELECT id FROM notes WHERE paper_id = ?1 ORDER BY id")?
+        .query_map([paper_id], |r| r.get(0))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    if n == 0 || n > ids.len() {
+        bail!(
+            "paper #{paper_id} has {} note(s), there is no note {n}",
+            ids.len()
+        );
+    }
+    Ok(ids[n - 1])
+}
+
+pub fn get_note(conn: &Connection, paper_id: i64, n: usize) -> Result<Note> {
+    let row_id = nth_note_id(conn, paper_id, n)?;
+    Ok(conn.query_row(
+        "SELECT created_at, body FROM notes WHERE id = ?1",
+        [row_id],
+        |r| {
+            Ok(Note {
+                created_at: r.get(0)?,
+                body: r.get(1)?,
+            })
+        },
+    )?)
+}
+
+pub fn delete_note(conn: &Connection, paper_id: i64, n: usize) -> Result<()> {
+    let row_id = nth_note_id(conn, paper_id, n)?;
+    conn.execute("DELETE FROM notes WHERE id = ?1", [row_id])?;
+    Ok(())
+}
+
+pub fn update_note(conn: &Connection, paper_id: i64, n: usize, body: &str) -> Result<()> {
+    let row_id = nth_note_id(conn, paper_id, n)?;
+    conn.execute(
+        "UPDATE notes SET body = ?1 WHERE id = ?2",
+        params![body, row_id],
+    )?;
+    Ok(())
 }
 
 /// Full-text search across title/authors/abstract/tags (FTS5) plus note

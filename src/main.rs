@@ -231,9 +231,12 @@ enum Cmd {
     },
 
     /// Add a note to a paper (no text opens $EDITOR)
+    #[command(args_conflicts_with_subcommands = true)]
     Note {
+        #[command(subcommand)]
+        action: Option<NoteCmd>,
         /// Paper id (as shown in `rlist list`)
-        id: i64,
+        id: Option<i64>,
         /// Note text, omit to open your editor
         #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
         text: Vec<String>,
@@ -321,6 +324,27 @@ enum Cmd {
         /// Don't ask for confirmation
         #[arg(short, long)]
         force: bool,
+    },
+}
+
+#[derive(Subcommand)]
+enum NoteCmd {
+    /// Delete a note (numbers shown in `rlist show`)
+    Rm {
+        /// Paper id (as shown in `rlist list`)
+        id: i64,
+        /// Note number (as shown in `rlist show`)
+        n: usize,
+    },
+    /// Rewrite a note (no text opens $EDITOR with the current note)
+    Edit {
+        /// Paper id (as shown in `rlist list`)
+        id: i64,
+        /// Note number (as shown in `rlist show`)
+        n: usize,
+        /// Replacement text, omit to open your editor
+        #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
+        text: Vec<String>,
     },
 }
 
@@ -420,7 +444,14 @@ fn run(cli: Cli) -> Result<()> {
             &conn, id, title, authors, year, venue, url, pdf_url, doi, arxiv, add_tags, rm_tags,
             priority, status, rating, pdf_file,
         ),
-        Cmd::Note { id, text } => cmd_note(&conn, id, &text.join(" ")),
+        Cmd::Note { action, id, text } => match action {
+            Some(NoteCmd::Rm { id, n }) => cmd_note_rm(&conn, id, n),
+            Some(NoteCmd::Edit { id, n, text }) => cmd_note_edit(&conn, id, n, &text.join(" ")),
+            None => {
+                let id = id.context("missing paper id: rlist note <ID> [TEXT]")?;
+                cmd_note(&conn, id, &text.join(" "))
+            }
+        },
         Cmd::Open { id, pdf } => cmd_open(&conn, id, pdf),
         Cmd::Rm { ids, force } => cmd_rm(&conn, &ids, force),
         Cmd::Next { random, tags } => cmd_next(&conn, random, tags),
@@ -1039,6 +1070,36 @@ fn cmd_note(conn: &Connection, id: i64, text: &str) -> Result<()> {
     }
     db::add_note(conn, id, &body)?;
     output::confirm_line("noted", &p);
+    Ok(())
+}
+
+fn cmd_note_rm(conn: &Connection, id: i64, n: usize) -> Result<()> {
+    let p = db::get_paper(conn, id)?;
+    db::delete_note(conn, id, n)?;
+    output::confirm_line(&format!("removed note {n} from"), &p);
+    Ok(())
+}
+
+fn cmd_note_edit(conn: &Connection, id: i64, n: usize, text: &str) -> Result<()> {
+    let p = db::get_paper(conn, id)?;
+    let old = db::get_note(conn, id, n)?;
+    let body = if text.trim().is_empty() {
+        edit_in_editor(&format!(
+            "{}\n\n# Editing note {} on #{} {}\n# Lines starting with '#' are ignored.\n",
+            old.body, n, p.id, p.title
+        ))?
+    } else {
+        text.trim().to_string()
+    };
+    if body.is_empty() {
+        bail!("empty note, delete it with `rlist note rm {id} {n}` instead");
+    }
+    if body == old.body {
+        println!("note {n} unchanged");
+        return Ok(());
+    }
+    db::update_note(conn, id, n, &body)?;
+    output::confirm_line(&format!("updated note {n} on"), &p);
     Ok(())
 }
 

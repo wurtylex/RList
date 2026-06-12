@@ -273,12 +273,14 @@ pub fn detail(p: &Paper) {
     if !p.notes.is_empty() {
         println!();
         println!("{}", paint(DIM, &format!("  notes ({})", p.notes.len())));
-        for n in &p.notes {
-            // "[YYYY-MM-DD] " is 13 columns, and continuations hang to match.
+        for (i, n) in p.notes.iter().enumerate() {
+            // e.g. "[2] [YYYY-MM-DD] ", continuations hang to match. The
+            // number is what `rlist note rm/edit` takes.
+            let tag = format!("[{}] [{}]", i + 1, date_of(&n.created_at));
             println!(
                 "  {} {}",
-                paint(MAGENTA, &format!("[{}]", date_of(&n.created_at))),
-                wrap_hanging(&n.body, width - 4, 13)
+                paint(MAGENTA, &tag),
+                wrap_hanging(&n.body, width - 4, tag.len() + 1)
             );
         }
     }

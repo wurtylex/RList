@@ -76,6 +76,8 @@ rlist drop 7                   # decided not to read it
 # Notes & details
 rlist note 3 "key idea: scaled dot-product attention"
 rlist note 3                   # no text -> opens $EDITOR
+rlist note edit 3 2            # rewrite note 2 (numbers shown in `rlist show`)
+rlist note rm 3 2              # delete note 2
 rlist show 3                   # full details: abstract, links, notes
 
 # Find things, full-text over titles, authors, abstracts, tags, notes
