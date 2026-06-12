@@ -1042,10 +1042,22 @@ fn cmd_note(conn: &Connection, id: i64, text: &str) -> Result<()> {
     Ok(())
 }
 
+fn fallback_editor() -> Option<String> {
+    let path = std::env::var_os("PATH")?;
+    ["vi", "vim", "nvim", "nano"].iter().find_map(|c| {
+        std::env::split_paths(&path)
+            .any(|dir| dir.join(c).is_file())
+            .then(|| c.to_string())
+    })
+}
+
 fn edit_in_editor(template: &str) -> Result<String> {
-    let editor = std::env::var("VISUAL")
-        .or_else(|_| std::env::var("EDITOR"))
-        .unwrap_or_else(|_| "vi".into());
+    let editor = [std::env::var("VISUAL"), std::env::var("EDITOR")]
+        .into_iter()
+        .flatten()
+        .find(|e| !e.trim().is_empty())
+        .or_else(fallback_editor)
+        .context("no editor found: set $VISUAL or $EDITOR, or install vi/vim/nvim/nano")?;
     let mut file = tempfile::Builder::new()
         .prefix("rlist-note-")
         .suffix(".md")
