@@ -179,7 +179,9 @@ enum Cmd {
     #[command(
         after_help = "Pass an empty string (or 0 for --year / -r) to clear a field:\n  \
         rlist edit 3 --venue \"\"     # remove the venue\n  \
-        rlist edit 3 -r 0           # remove the rating"
+        rlist edit 3 -r 0           # remove the rating\n\n\
+        Got the PDF from somewhere else (e.g. behind a paywall)? Hand it to `open --pdf`:\n  \
+        rlist edit 3 --pdf-file ~/Downloads/paper.pdf"
     )]
     Edit {
         /// Paper id (as shown in `rlist list`)
@@ -223,6 +225,9 @@ enum Cmd {
         /// Rating 1-5 (0 clears it)
         #[arg(short, long)]
         rating: Option<i64>,
+        /// Copy a local PDF into the cache so `open --pdf` uses it
+        #[arg(long, value_name = "PATH")]
+        pdf_file: Option<PathBuf>,
     },
 
     /// Add a note to a paper (no text opens $EDITOR)
@@ -410,9 +415,10 @@ fn run(cli: Cli) -> Result<()> {
             priority,
             status,
             rating,
+            pdf_file,
         } => cmd_edit(
             &conn, id, title, authors, year, venue, url, pdf_url, doi, arxiv, add_tags, rm_tags,
-            priority, status, rating,
+            priority, status, rating, pdf_file,
         ),
         Cmd::Note { id, text } => cmd_note(&conn, id, &text.join(" ")),
         Cmd::Open { id, pdf } => cmd_open(&conn, id, pdf),
@@ -870,6 +876,7 @@ fn cmd_edit(
     priority: Option<String>,
     status: Option<String>,
     rating: Option<i64>,
+    pdf_file: Option<PathBuf>,
 ) -> Result<()> {
     let mut p = db::get_paper(conn, id)?;
     let flags_given = title.is_some()
@@ -884,10 +891,22 @@ fn cmd_edit(
         || !rm_tags.is_empty()
         || priority.is_some()
         || status.is_some()
-        || rating.is_some();
+        || rating.is_some()
+        || pdf_file.is_some();
     if !flags_given {
         bail!("nothing to change, see `rlist edit --help` for available fields");
     }
+
+    // Read and check the local PDF up front so a bad path or non-PDF file
+    // doesn't leave the other edits half-applied.
+    let pdf_bytes = pdf_file
+        .map(|f| -> Result<Vec<u8>> {
+            let bytes =
+                std::fs::read(&f).with_context(|| format!("reading {}", f.display()))?;
+            anyhow::ensure!(bytes.starts_with(b"%PDF"), "{} is not a PDF", f.display());
+            Ok(bytes)
+        })
+        .transpose()?;
 
     if let Some(t) = title {
         let t = t.trim().to_string();
@@ -983,6 +1002,23 @@ fn cmd_edit(
         };
     }
 
+    // After the field updates, so a --pdf-url passed in the same command is
+    // what the cache file gets keyed on.
+    if let Some(bytes) = pdf_bytes {
+        let url = p.best_url(true).ok_or_else(|| {
+            anyhow::anyhow!(
+                "#{id} has no URL to key the cache on, set one in the same command:\n  \
+                rlist edit {id} --pdf-url <URL> --pdf-file <PATH>"
+            )
+        })?;
+        let path = cached_pdf_path(id, url);
+        write_cached_pdf(&path, &bytes)?;
+        println!(
+            "cached {} for `rlist open {id} --pdf`",
+            paint(BOLD, &path.display().to_string())
+        );
+    }
+
     db::update_paper(conn, &p)?;
     output::confirm_line("updated", &p);
     Ok(())
@@ -1068,16 +1104,7 @@ fn cmd_open(conn: &Connection, id: i64, pdf: bool) -> Result<()> {
         if !path.is_file() {
             eprintln!("{}", paint(DIM, &format!("downloading {url} …")));
             match fetch::download_pdf(url) {
-                Ok(bytes) => {
-                    if let Some(parent) = path.parent() {
-                        std::fs::create_dir_all(parent)
-                            .with_context(|| format!("creating {}", parent.display()))?;
-                    }
-                    let tmp = path.with_extension("part");
-                    std::fs::write(&tmp, &bytes)
-                        .with_context(|| format!("writing {}", tmp.display()))?;
-                    std::fs::rename(&tmp, &path)?;
-                }
+                Ok(bytes) => write_cached_pdf(&path, &bytes)?,
                 Err(e) => {
                     eprintln!("{} {e:#}", paint(YELLOW, "warning:"));
                     return open_in_browser("download failed");
@@ -1126,6 +1153,19 @@ pub fn cache_dir() -> PathBuf {
     dirs::cache_dir()
         .unwrap_or_else(std::env::temp_dir)
         .join("rlist")
+}
+
+/// Write a PDF into the cache atomically (tmp file + rename) so an
+/// interrupted write never leaves a truncated .pdf behind.
+fn write_cached_pdf(path: &std::path::Path, bytes: &[u8]) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)
+            .with_context(|| format!("creating {}", parent.display()))?;
+    }
+    let tmp = path.with_extension("part");
+    std::fs::write(&tmp, bytes).with_context(|| format!("writing {}", tmp.display()))?;
+    std::fs::rename(&tmp, path)?;
+    Ok(())
 }
 
 /// Cache file for a paper's PDF. The URL hash keeps a stale copy from being
