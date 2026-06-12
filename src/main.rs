@@ -934,8 +934,7 @@ fn cmd_edit(
     // doesn't leave the other edits half-applied.
     let pdf_bytes = pdf_file
         .map(|f| -> Result<Vec<u8>> {
-            let bytes =
-                std::fs::read(&f).with_context(|| format!("reading {}", f.display()))?;
+            let bytes = std::fs::read(&f).with_context(|| format!("reading {}", f.display()))?;
             anyhow::ensure!(bytes.starts_with(b"%PDF"), "{} is not a PDF", f.display());
             Ok(bytes)
         })
