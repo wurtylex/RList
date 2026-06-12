@@ -32,6 +32,8 @@ use std::path::PathBuf;
         rlist start 3               # mark as reading\n  \
         rlist done 3 -r 5           # finished, rated 5/5\n  \
         rlist note 3 \"key idea: scaled dot-product attention\"\n  \
+        rlist note edit 3 2         # rewrite note 2 (numbers shown in `rlist show`)\n  \
+        rlist note rm 3 2           # delete note 2\n  \
         rlist search attention      # full-text search (incl. abstracts & notes)\n  \
         rlist export -f bibtex -o refs.bib"
 )]
@@ -230,7 +232,7 @@ enum Cmd {
         pdf_file: Option<PathBuf>,
     },
 
-    /// Add a note to a paper (no text opens $EDITOR)
+    /// Add, edit, or delete notes on a paper (no text opens $EDITOR)
     #[command(args_conflicts_with_subcommands = true)]
     Note {
         #[command(subcommand)]
@@ -1066,7 +1068,8 @@ fn cmd_note(conn: &Connection, id: i64, text: &str) -> Result<()> {
         text.trim().to_string()
     };
     if body.is_empty() {
-        bail!("empty note, nothing saved");
+        println!("empty note, nothing saved");
+        return Ok(());
     }
     db::add_note(conn, id, &body)?;
     output::confirm_line("noted", &p);
@@ -1092,7 +1095,8 @@ fn cmd_note_edit(conn: &Connection, id: i64, n: usize, text: &str) -> Result<()>
         text.trim().to_string()
     };
     if body.is_empty() {
-        bail!("empty note, delete it with `rlist note rm {id} {n}` instead");
+        println!("nothing written, note {n} unchanged (use `rlist note rm {id} {n}` to delete it)");
+        return Ok(());
     }
     if body == old.body {
         println!("note {n} unchanged");
@@ -1794,6 +1798,9 @@ fn cmd_import(conn: &Connection, file: &PathBuf, format: Option<String>) -> Resu
         let notes = std::mem::take(&mut p.notes);
         let id = db::insert_paper(&tx, &p)?;
         for n in notes {
+            if n.body.trim().is_empty() {
+                continue;
+            }
             tx.execute(
                 "INSERT INTO notes (paper_id, created_at, body) VALUES (?1, ?2, ?3)",
                 rusqlite::params![

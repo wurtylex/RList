@@ -265,6 +265,9 @@ pub fn papers_with_title(conn: &Connection, title: &str) -> Result<Vec<Paper>> {
 }
 
 pub fn add_note(conn: &Connection, paper_id: i64, body: &str) -> Result<()> {
+    if body.trim().is_empty() {
+        bail!("refusing to save an empty note");
+    }
     // Ensure the paper exists so we fail with a friendly error.
     get_paper(conn, paper_id)?;
     conn.execute(
@@ -324,6 +327,9 @@ pub fn delete_note(conn: &Connection, paper_id: i64, n: usize) -> Result<()> {
 }
 
 pub fn update_note(conn: &Connection, paper_id: i64, n: usize, body: &str) -> Result<()> {
+    if body.trim().is_empty() {
+        bail!("refusing to save an empty note");
+    }
     let row_id = nth_note_id(conn, paper_id, n)?;
     conn.execute(
         "UPDATE notes SET body = ?1 WHERE id = ?2",
